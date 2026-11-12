@@ -1,0 +1,6 @@
+title = "Automated Code Review Bot - Gitleaks"
+
+[[rules]]
+id = "custom-github-pat"
+description = "Detect GitHub personal access tokens"
+regex = '''ghp_[A-Za-z0-9]{20,}'''
