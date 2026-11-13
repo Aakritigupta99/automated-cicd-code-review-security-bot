@@ -1,3 +1,5 @@
+import sys
+
 from scanner.code_quality import scan_code_quality
 from scanner.dependency_scan import scan_dependencies
 from scanner.html_report import generate_html_report
@@ -50,7 +52,7 @@ def main():
     security_findings = scan_security(".")
     secret_findings = scan_secrets(".")
     dependency_findings = scan_dependencies()
-   
+
 
     all_findings = (
     quality_findings
@@ -83,7 +85,13 @@ def main():
     )
 
     print("Total Findings:", total)
-    print("\nScan completed!")
+
+    if total > 0:
+
+       print("\nScan completed with issues. Failing the workflow.")
+       sys.exit(1)
+
+    print("\nScan completed successfully. No issues found.")
 
 
 if __name__ == "__main__":

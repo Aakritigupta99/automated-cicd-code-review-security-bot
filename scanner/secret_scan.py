@@ -5,21 +5,32 @@ import subprocess  # nosec B404
 from pathlib import Path
 
 
+def scanner_error(message):
+    """Return an error finding when Gitleaks cannot complete its scan."""
+    return [{
+        "tool": "Gitleaks",
+        "file": "N/A",
+        "line": 0,
+        "message": message,
+        "severity": "Error",
+    }]
+
+
 def scan_secrets(project_path="."):
     """Detect exposed secrets using Gitleaks."""
 
     project_path = Path(project_path).resolve()
     config_path = project_path / ".gitleaks.toml"
 
-    # Resolve the full Gitleaks executable path.
+    # Find the Gitleaks executable.
     gitleaks_path = shutil.which("gitleaks")
 
     if gitleaks_path is None:
-        print("Gitleaks is not installed or not in PATH.")
-        return []
+        return scanner_error(
+            "Gitleaks is not installed or not in PATH."
+        )
 
     try:
-        # Safe usage: fixed Gitleaks command, argument list, no shell=True.
         result = subprocess.run(  # nosec B603
             [
                 gitleaks_path,
@@ -41,8 +52,9 @@ def scan_secrets(project_path="."):
         )
 
         if result.returncode not in (0, 1):
-            print("Gitleaks error:", result.stderr)
-            return []
+            return scanner_error(
+                "Gitleaks execution failed: " + result.stderr
+            )
 
         if not result.stdout.strip():
             return []
@@ -62,13 +74,14 @@ def scan_secrets(project_path="."):
         ]
 
     except subprocess.TimeoutExpired:
-        print("Gitleaks scan timed out.")
-        return []
+        return scanner_error("Gitleaks scan timed out.")
 
     except FileNotFoundError:
-        print("Gitleaks executable could not be found.")
-        return []
+        return scanner_error(
+            "Gitleaks executable could not be found."
+        )
 
     except json.JSONDecodeError:
-        print("Could not read Gitleaks JSON report.")
-        return []
+        return scanner_error(
+            "Could not read Gitleaks JSON report."
+        )
